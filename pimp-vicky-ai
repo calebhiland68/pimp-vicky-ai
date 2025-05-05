@@ -1,0 +1,23 @@
+import streamlit as st
+import datetime
+import yfinance as yf
+
+st.set_page_config(page_title="Pimp Vicky AI", layout="centered")
+st.title("Pimp Vicky - Stock Advisor")
+
+ticker = st.text_input("Enter stock symbol (e.g. AAPL, TSLA):")
+
+if st.button("Run Daily Analysis"):
+    if ticker:
+        try:
+            data = yf.download(ticker, period="5d", interval="1d")
+            if data.empty:
+                st.error("No data found. Check the stock symbol.")
+            else:
+                latest = data.iloc[-1]
+                st.success(f"{ticker.upper()} - Daily Close: ${latest['Close']:.2f}")
+                st.line_chart(data["Close"])
+        except Exception as e:
+            st.error(f"Error: {e}")
+    else:
+        st.warning("Please enter a stock symbol.")
