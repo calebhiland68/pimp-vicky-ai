@@ -1,67 +1,47 @@
 import streamlit as st
-import datetime
 import yfinance as yf
+from datetime import datetime
 
-st.set_page_config(page_title="Pimp Vicky – Stock AI", page_icon="💰")
-st.title("Pimp Vicky – Your Stock Market Baddie")
+st.set_page_config(page_title="Pimp Vicky AI", page_icon=":chart_with_upwards_trend:")
 
-# Init state
-if "step" not in st.session_state:
-    st.session_state.step = "greeting"
-if "investment" not in st.session_state:
-    st.session_state.investment = None
-if "style" not in st.session_state:
-    st.session_state.style = None
-if "ticker" not in st.session_state:
-    st.session_state.ticker = None
+st.title("Pimp Vicky: Your Stock Assistant AI")
 
-# --- Step Flow ---
-if st.session_state.step == "greeting":
-    st.markdown("**Vicky:** Hey sugar, I'm Vicky — your AI stock plug. Let's run this bag up.")
-    if st.button("Let's go"):
-        st.session_state.step = "ask_investment"
+# Greeting
+st.write("Hey, I'm Pimp Vicky. Let's make some money moves.")
+st.write("I'll help you with stock predictions based on your strategy.")
 
-elif st.session_state.step == "ask_investment":
-    investment = st.number_input("**Vicky:** How much money you lookin’ to invest today?**", min_value=10.0)
-    if st.button("Lock it in"):
-        st.session_state.investment = investment
-        st.session_state.step = "ask_style"
+# Step 1: Ask for stock symbol
+stock = st.text_input("What stock are you looking at? (Use the stock symbol, e.g., AAPL for Apple)")
 
-elif st.session_state.step == "ask_style":
-    style = st.radio("**Vicky:** You ridin’ this wave short-term or sittin’ pretty long-term?**", ["Day Trading", "Long-Term"])
-    if st.button("Pick your hustle"):
-        st.session_state.style = style
-        st.session_state.step = "ask_prediction"
+# Step 2: Ask for investment amount
+amount = st.number_input("How much money do you want to invest?", min_value=1.0, step=1.0)
 
-elif st.session_state.step == "ask_prediction":
-    want_prediction = st.radio("**Vicky:** Want me to run a prediction on your investment for today?**", ["Yes", "No"])
-    if want_prediction == "Yes":
-        st.session_state.step = "get_ticker"
-    elif want_prediction == "No":
-        st.markdown("**Vicky:** Aight. You know where to find me when you're ready.**")
+# Step 3: Ask for investment style
+strategy = st.radio("How do you want to invest?", ("Day Trading", "Long Term"))
 
-elif st.session_state.step == "get_ticker":
-    ticker = st.text_input("**Vicky:** Drop the stock ticker, baby. Let me work my magic.**").upper()
-    if st.button("Show me the money"):
-        st.session_state.ticker = ticker
-        st.session_state.step = "predict"
+# Trigger analysis
+if st.button("Run Prediction"):
+    if stock:
+        st.subheader(f"Analyzing {stock.upper()}...")
+        ticker = yf.Ticker(stock)
+        data = ticker.history(period="5d")
 
-elif st.session_state.step == "predict":
-    ticker = st.session_state.ticker
-    investment = st.session_state.investment
-    style = st.session_state.style
+        if not data.empty:
+            st.line_chart(data["Close"])
+            current_price = data["Close"].iloc[-1]
+            shares = round(amount / current_price, 2)
 
-    try:
-        data = yf.download(ticker, period="5d", interval="1d")
-        last_close = data['Close'][-1]
-        predicted_price = last_close * (1.01 if style == "Day Trading" else 1.05)
-        estimated_return = (predicted_price - last_close) / last_close * investment
+            if strategy == "Day Trading":
+                st.write(f"Day Trading Strategy for {stock.upper()}:")
+                st.write(f"With ${amount}, you could buy about {shares} shares at ${current_price:.2f} per share.")
+                st.write("Tip: Watch for morning volatility and set a stop-loss.")
+            else:
+                st.write(f"Long Term Strategy for {stock.upper()}:")
+                st.write(f"With ${amount}, you could invest in about {shares} shares.")
+                st.write("Tip: Look at the 6-month and 1-year trends for better decisions.")
 
-        st.markdown(f"**Vicky:** Stock `{ticker}` closed at **${last_close:.2f}**.")
-        st.markdown(f"**Vicky:** I’m seeing a target of **${predicted_price:.2f}** by next session.")
-        st.markdown(f"**Vicky:** If you invest ${investment}, I’m projecting **${estimated_return:.2f}** in returns.")
-
-        st.balloons()
-        st.markdown("**Vicky:** Stay sharp, keep that hustle alive.**")
-    except:
-        st.markdown("**Vicky:** Uh-oh, that ticker ain't hittin’. Double check it for me.**")
+            st.success("Prediction complete. Come back tomorrow for fresh data!")
+        else:
+            st.error("Could not fetch data. Make sure the symbol is correct.")
+    else:
+        st.warning("Enter a stock symbol to get started.")
